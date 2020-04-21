@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     RelativeLayout layout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-         randomFour=(randomfour.nextInt())%4;
+         randomFour=(randomfour.nextInt())%3;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         layout=findViewById(R.id.layout);
