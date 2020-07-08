@@ -9,11 +9,20 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import static android.content.Context.SENSOR_SERVICE;
+
 public class TextBackImage extends androidx.appcompat.widget.AppCompatTextView {
+    private Context contextSensor;
     private Bitmap mMaskBitmap;
     private Canvas mMaskCanvas;
     private Paint mPaint;
@@ -22,10 +31,12 @@ public class TextBackImage extends androidx.appcompat.widget.AppCompatTextView {
     private Canvas mBackgroundCanvas;
     public TextBackImage(final Context context) {
         super(context);
+        contextSensor=context;
         init();
     }
     public TextBackImage(final Context context, final AttributeSet attrs) {
         super(context, attrs);
+        contextSensor=context;
         init();
     }
     private void init() {
@@ -103,5 +114,35 @@ public class TextBackImage extends androidx.appcompat.widget.AppCompatTextView {
     }
     private static void clear(Canvas canvas) {
         canvas.drawColor(Color.BLACK, PorterDuff.Mode.CLEAR);
+    }
+    double previousAzi,previousPic,previousRoll;
+    public void setOrientation(final ImageView imageView)
+    {
+        SensorManager sensorManager =
+                (SensorManager) this.contextSensor.getSystemService(SENSOR_SERVICE);
+        Sensor magnetometer=sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        SensorEventListener magnetoSensorListener=new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                double mAzimuth =Math.abs((Math.pow(event.values[0],1.0)+47)%100);
+                double mPitch = Math.abs((Math.pow(event.values[1],1)+47)%100);
+                double mRoll = Math.abs((Math.pow(event.values[2],1)+47)%100);
+                double left=(mAzimuth*mPitch*mRoll)%100;
+                Log.i("tag",mAzimuth + "   "+mRoll+"   "+mPitch+ "     "+left+"   "+Math.abs((int)((mAzimuth+mPitch+mRoll)-(previousRoll+previousPic+previousAzi))));
+                if(Math.abs((int)((mAzimuth+mPitch+mRoll)-(previousRoll+previousPic+previousAzi)))>2){
+                imageView.setPadding((int)left,(int)mPitch,(int)mRoll,(int)mAzimuth);}
+            previousAzi=mAzimuth;
+            previousPic=mPitch;
+            previousRoll=mRoll;
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
+        // Register the listener
+        sensorManager.registerListener(magnetoSensorListener,
+                magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 }
